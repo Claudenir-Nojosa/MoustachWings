@@ -62,9 +62,9 @@ export const metadata = {
     creator: "@nojosaf",
   },
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon-16x16.png",
-    apple: "/apple-touch-icon.png",
+    icon: "https://raw.githubusercontent.com/Claudenir-Nojosa/servidor_estaticos/0a8ac5ea0cfeff8c9ba45076fbcdbad1e1f996c4/logo.svg",
+    shortcut: "https://raw.githubusercontent.com/Claudenir-Nojosa/servidor_estaticos/0a8ac5ea0cfeff8c9ba45076fbcdbad1e1f996c4/logo.svg",
+    apple: "https://raw.githubusercontent.com/Claudenir-Nojosa/servidor_estaticos/0a8ac5ea0cfeff8c9ba45076fbcdbad1e1f996c4/logo.svg",
   },
   manifest: `${siteConfig.url}/site.webmanifest`,
 }
