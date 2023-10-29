@@ -9,6 +9,7 @@ import Image from "next/image"
 import Link from "next/link"
 
 import { env } from "@/env.mjs"
+import { getTableOfContents } from "@/lib/toc"
 import { absoluteUrl, cn, formatDate } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 import { Icons } from "@/components/icons"
@@ -94,6 +95,8 @@ export default async function PostPage({ params }: PostPageProps) {
     allAuthors.find(({ slug }) => slug === `/authors/${author}`)
   )
 
+  const toc = await getTableOfContents(post.body.raw)
+
   return (
     <article className="container relative max-w-3xl py-6 lg:py-10">
       <Link
@@ -103,7 +106,7 @@ export default async function PostPage({ params }: PostPageProps) {
           "absolute left-[-200px] top-14 hidden  xl:inline-flex"
         )}
       >
-        <Icons.chevronLeft className="mr-1 h-4 w-4" />
+        <Icons.chevronLeft className="mr--1 h-4 w-4" />
         Veja todas as publicações
       </Link>
       <div>
@@ -141,7 +144,9 @@ export default async function PostPage({ params }: PostPageProps) {
                     </p>
                   </div>
                 </Link>
-              ) : "null"
+              ) : (
+                "null"
+              )
             )}
           </div>
         ) : null}

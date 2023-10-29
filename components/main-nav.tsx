@@ -1,8 +1,10 @@
 "use client"
 
 import * as React from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { useSelectedLayoutSegment } from "next/navigation"
+import { Post, allPosts } from "@/.contentlayer/generated"
 
 import { MainNavItem } from "types"
 import { siteConfig } from "@/config/site"
@@ -16,16 +18,17 @@ interface MainNavProps {
 
 export function MainNav({ items, children }: MainNavProps) {
   const segment = useSelectedLayoutSegment()
-  const [showMobileMenu, setShowMobileMenu] = React.useState<boolean>(false)
+
 
   return (
     <div className="flex gap-6 md:gap-10">
       <Link href="/" className="hidden items-center space-x-2 md:flex">
-        <LogoIcon className="h-10 w-10"/>
+        <LogoIcon className="h-10 w-10" />
         <span className="hidden font-bold sm:inline-block">
           {siteConfig.name}
         </span>
       </Link>
+      
       {items?.length ? (
         <nav className="hidden gap-6 md:flex">
           {items?.map((item, index) => (

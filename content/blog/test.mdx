@@ -5,12 +5,17 @@ image: /images/blog/blog-post-5.jpg
 date: "2023-01-02"
 authors:
   - Claudenir Nojosa
+tags:
+  - Tecnologia
+  - Programação
+  - all
 ---
 
 <Callout>
   O texto a seguir é dos documentos do [Tailwind
-  CSS](https://play.tailwindcss.com/uj1vGACRJA?layout=preview). Eu o copiei
-  aqui para testar os estilos do Markdown. **Tailwind é incrível. Você deveria usá-lo.**
+  CSS](https://play.tailwindcss.com/uj1vGACRJA?layout=preview). Eu o copiei aqui
+  para testar os estilos do Markdown. **Tailwind é incrível. Você deveria
+  usá-lo.**
 </Callout>
 
 Até agora, estilizar um artigo, documento ou postagem de blog com o Tailwind tem sido uma tarefa tediosa que exigia um olhar atento para a tipografia e uma grande quantidade de CSS personalizado complexo.
@@ -28,11 +33,11 @@ Ele adiciona uma nova classe `prosa` que você pode aplicar a qualquer bloco de 
 
 ```ts
 import * as React from "react"
+import { AlternarModo } from "@/componentes/alternar-modo"
+import { Ícones } from "@/componentes/ícones"
 
 import { configSite } from "@/config/site"
 import { cn } from "@/lib/utils"
-import { Ícones } from "@/componentes/ícones"
-import { AlternarModo } from "@/componentes/alternar-modo"
 
 export function RodapéDoSite({ className }: React.HTMLAttributes<HTMLElement>) {
   return (
@@ -153,7 +158,6 @@ module.exports = {
 | Randy Savage            | Sarasota, FL | Elbow Drop         |
 | Vader                   | Boulder, CO  | Vader Bomb         |
 | Razor Ramon             | Chuluota, FL | Razor's Edge       |
-
 
 Um link como www.example.com ou https://example.com seria automaticamente convertido em uma tag a.
 

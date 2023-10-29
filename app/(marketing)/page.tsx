@@ -1,17 +1,46 @@
+"use client"
+
+import { useCallback, useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { allPosts } from "contentlayer/generated"
 import { compareDesc } from "date-fns"
 
 import { formatDate } from "@/lib/utils"
-
+import BlogList from "@/components/blog/BlogList"
+import SearchClient from "@/components/search/search-client"
 
 export default async function BlogPage() {
+  const [inputValue, setInputValue] = useState<string>("")
+  const [initialList] = useState(allPosts)
+  const [filteredList, setFilteredList] = useState(allPosts)
+
   const posts = allPosts
     .filter((post) => post.published)
     .sort((a, b) => {
       return compareDesc(new Date(a.date), new Date(b.date))
     })
+
+  // Search Handler
+  const searchHandler = useCallback(() => {
+    const filteredData = initialList.filter((post) => {
+      return post.title.toLowerCase().includes(inputValue.toLowerCase())
+    })
+    setFilteredList(filteredData)
+  }, [initialList, inputValue])
+
+  // EFFECT: Search Handler
+  useEffect(() => {
+    // Debounce search handler
+    const timer = setTimeout(() => {
+      searchHandler()
+    }, 500)
+
+    // Cleanup
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [searchHandler])
 
   return (
     <div className="container max-w-4xl py-6 lg:py-10">
@@ -27,41 +56,8 @@ export default async function BlogPage() {
         </div>
       </div>
       <hr className="my-8" />
-      {posts?.length ? (
-        <div className="grid gap-10 sm:grid-cols-2">
-          {posts.map((post, index) => (
-            <article
-              key={post._id}
-              className="group relative flex flex-col space-y-2"
-            >
-              {post.image && (
-                <Image
-                  src={post.image}
-                  alt={post.title}
-                  width={804}
-                  height={452}
-                  className="rounded-md border bg-muted transition-colors"
-                  priority={index <= 1}
-                />
-              )}
-              <h2 className="text-2xl font-extrabold">{post.title}</h2>
-              {post.description && (
-                <p className="text-muted-foreground">{post.description}</p>
-              )}
-              {post.date && (
-                <p className="text-sm text-muted-foreground">
-                  {formatDate(post.date)}
-                </p>
-              )}
-              <Link href={post.slug} className="absolute inset-0">
-                <span className="sr-only">View Article</span>
-              </Link>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <p>No posts published.</p>
-      )}
+      <SearchClient inputValue={inputValue} setInputValue={setInputValue} />
+      <BlogList posts={inputValue.length > 0 ? filteredList : posts} />
     </div>
   )
 }

@@ -1,0 +1,816 @@
+---
+title: NextAuth
+description: Como fazer o deploy das suas aplicações Next.js na Vercel.
+image: /images/blog/blog-post-5.jpg
+date: "2023-10-29"
+authors:
+  - Claudenir Nojosa
+tags:
+  - Teste
+  - Programação
+  - all
+---
+
+
+# 1°  NextAuth
+
+Primeiro passo é sempre instalar as dependências:
+
+```jsx
+npm i axios bcrypt next-auth zod react-hook-form @hookform/resolvers/zod @prisma/client @auth/prisma-adapter @next-auth/prisma-adapter
+```
+
+Utilizando shadcn:
+
+```jsx
+npx shadcn-ui@latest init
+npx shadcn-ui@latest add button form input
+```
+
+Aplicando a validação do Zod:
+
+```tsx
+import { z } from "zod";
+
+export const LoginSchema = z.object({
+  email: z
+    .string({ required_error: "Insira seu e-mail" })
+    .min(1, { message: "Insira seu e-mail" }),
+  password: z
+    .string({ required_error: "Insira sua senha" })
+    .min(1, { message: "Insira sua senha" })
+    .min(6, { message: "Senha deve conter no mínimo 6 caracteres" }),
+});
+export const RegisterSchema = z.object({
+  username: z
+    .string()
+    .min(2, { message: "Insira seu Nome" })
+    .max(50, { message: "Limite de caracteres" })
+    .refine((username) => /^[A-Za-z]+$/.test(username), {
+      message: "O nome de usuário deve conter apenas letras",
+    }),
+  email: z
+    .string()
+    .min(1, { message: "Insira seu e-mail" })
+    .refine((email) => email.includes("@"), {
+      message: "Insira um e-mail válido",
+    }),
+  password: z
+    .string()
+    .min(6, { message: "Senha deve conter no mínimo 6 caracteres" }),
+});
+```
+
+Após isso, crie o formulário de Criação de conta:
+
+```tsx
+"use client";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import Link from "next/link";
+import { signIn } from "next-auth/react";
+import axios from "axios";
+import { useRouter } from "next/navigation";
+import { RegisterSchema } from "@/lib/validations/user";
+import { Card, CardBody, CardFooter } from "@nextui-org/react";
+import { title as textTitle } from "../primitives";
+const RegisterForm = () => {
+  const router = useRouter();
+  const form = useForm<z.infer<typeof RegisterSchema>>({
+    resolver: zodResolver(RegisterSchema),
+    defaultValues: {
+      username: "",
+      email: "",
+      password: "",
+    },
+  });
+
+  const onSubmit: SubmitHandler<z.infer<typeof RegisterSchema>> = async (
+    values
+  ) => {
+    console.log(values);
+    try {
+      const response = await axios.post(
+        "/api/register",
+        {
+          name: values.username,
+          email: values.email,
+          password: values.password,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const user = response.data;
+      router.push("/login");
+    } catch (error) {
+      console.error("Error registering user:", error);
+    }
+  };
+
+  return (
+    <>
+      <h1 className={`text-2xl ${textTitle({ color: "violet" })}`}>
+        Criar conta
+      </h1>
+      <Card className="min-w-[400px] max-h-[800px] bg-black border rounded-lg p-10 pb-2 mt-6">
+        <Form {...form}>
+          <CardBody>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome</FormLabel>
+                    <FormControl>
+                      <Input type="text" placeholder="Seu nome" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="Seu melhor e-mail"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Senha</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="******" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-center items-center">
+                <Button
+                  className="hover:text-zinc-400 w-full mt-5"
+                  variant="outline"
+                  type="submit"
+                >
+                  Registrar
+                </Button>
+              </div>
+            </form>
+          </CardBody>
+          <CardFooter className="flex justify-center items-center">
+            <div>
+              <div className="mx-auto my-4 flex w-full items-center justify-evenly before:mr-4 before:block before:h-px before:flex-grow before:bg-stone-400 after:ml-4 after:block after:h-px after:flex-grow after:bg-stone-400">
+                ou
+              </div>
+              <div className="gap-3 flex flex-col justify-center items-center">
+                <Button
+                  className="hover:text-zinc-400 w-full"
+                  variant="outline"
+                  onClick={() => signIn("github")}
+                >
+                  Login com Github
+                </Button>
+                <Button
+                  className="hover:text-zinc-400 w-full"
+                  variant="outline"
+                  onClick={() => signIn("google")}
+                >
+                  Login com Google
+                </Button>
+              </div>
+              <p className="text-center text-sm text-slate-300 mt-10">
+                Você já possui uma conta?
+                <Link
+                  className="text-violet-400 hover:underline ml-2"
+                  href="/login"
+                >
+                  Login
+                </Link>
+              </p>
+            </div>
+          </CardFooter>
+        </Form>
+      </Card>
+    </>
+  );
+};
+
+export default RegisterForm;
+```
+
+E o de login:
+
+```tsx
+"use client";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import Link from "next/link";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { LoginSchema } from "@/lib/validations/user";
+import { Card, CardBody, CardFooter } from "@nextui-org/react";
+import { title as textTitle } from "../primitives";
+
+const LoginForm = () => {
+  const session = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (session.status === "authenticated") {
+      router.push("/dashboard");
+    }
+  });
+  const form = useForm<z.infer<typeof LoginSchema>>({
+    resolver: zodResolver(LoginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const googleSignInHandler = async () => {
+    try {
+      const res = await signIn("google");
+      if (res?.error == null) {
+        router.push("/");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const githubSignInHandler = async () => {
+    try {
+      const res = await signIn("github");
+      if (res?.error == null) {
+        router.push("/");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const onSubmit = async (values: z.infer<typeof LoginSchema>) => {
+    console.log(values);
+    try {
+      const res = await signIn("credentials", {
+        email: values.email,
+        password: values.password,
+        redirect: false,
+      });
+
+      if (res?.error == null) {
+        router.push("/");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  return (
+    <>
+      <h1 className={`text-2xl ${textTitle({ color: "violet" })}`}>
+        Fazer Login
+      </h1>
+      <Card className="min-w-[400px] max-h-[800px] bg-black border rounded-lg p-2 pb-2 mt-6">
+        <Form {...form}>
+          <CardBody>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="Seu melhor e-mail"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Senha</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="******" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-center items-center">
+                <Button
+                  className="hover:text-zinc-400 w-full mt-[20px]"
+                  variant="outline"
+                  type="submit"
+                >
+                  Login
+                </Button>
+              </div>
+            </form>
+          </CardBody>
+          <CardFooter className="flex text-center items-center justify-center">
+            <div className="flex flex-col justify-center items-center">
+              <div className="mx-auto my-4 flex w-full items-center justify-evenly before:mr-4 before:block before:h-px before:flex-grow before:bg-stone-400 after:ml-4 after:block after:h-px after:flex-grow after:bg-stone-400">
+                ou
+              </div>
+              <div className="gap-3 flex flex-col justify-center items-center w-full">
+                <Button
+                  className="hover:text-zinc-400 w-full"
+                  variant="outline"
+                  onClick={githubSignInHandler}
+                >
+                  Login com Github
+                </Button>
+                <Button
+                  className="hover:text-zinc-400 w-full"
+                  variant="outline"
+                  onClick={googleSignInHandler}
+                >
+                  Login com Google
+                </Button>
+              </div>
+              <p className="text-center text-sm text-slate-300 mt-20">
+                Se você não possui uma conta
+                <Link
+                  className="text-violet-400 hover:underline ml-2"
+                  href="/register"
+                >
+                  Registrar
+                </Link>
+              </p>
+            </div>
+          </CardFooter>
+        </Form>
+      </Card>
+    </>
+  );
+};
+
+export default LoginForm;
+```
+
+Após isso, crie o banco de dados no MongoDB, e coloque a conexão no arquivo ‘.env’
+
+Após criar o banco de dados, vamos mexer no prisma:
+
+```jsx
+npm i prisma --save-dev
+```
+
+Após instalar, o inicie:
+
+```jsx
+npx prisma init
+```
+
+No arquivo schema.prisma, você irá colocar o seguinte código:
+
+```
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  image          String?
+  hashedPassword String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  accounts Account[]
+  Session  Session[]
+}
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.String
+  access_token      String? @db.String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.String
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+```
+
+Após isso, na realidade, qualquer mudança nesse arquivo schema, você terá que rodar o código:
+
+```jsx
+npx prisma generate
+```
+
+Após isso, no arquivo ‘.env’ onde tem a url da database, insira o nome do teu cluster no final da string:
+
+```jsx
+DATABASE_URL="mongodb+srv://claunojosaf:GIBasdci3DhYGb0V@bloon.cx5je3o.mongodb.net/bloon”
+```
+
+Após isso, digite o comando:
+
+```jsx
+npx prisma db push
+```
+
+Após fazer o push, ao entrar no mongoDB, você já conseguirá ver as collections criadas no schema do prisma:
+
+![Untitled](1%C2%B0%20NextAuth%209e4d25059dfe4296a7c060d8db955eb5/Untitled.png)
+
+Crie uma pasta chamada ‘lib’, onde você irá criar o arquivo ‘prismadb.ts’, com o seguinte código:
+
+```tsx
+import { PrismaClient } from "@prisma/client";
+
+const prismaClientSingleton = () => {
+  return new PrismaClient();
+};
+type prismaClientSingleton = ReturnType<typeof prismaClientSingleton>;
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: prismaClientSingleton | undefined;
+};
+const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
+
+export default prisma;
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+
+export const db = prisma;
+```
+
+Acabado as configurações, vamos para mão na massa!
+
+Crie as rotas da api da aplicação:
+
+![api/register](1%C2%B0%20NextAuth%209e4d25059dfe4296a7c060d8db955eb5/Untitled%201.png)
+
+api/register
+
+Com o seguinte código:
+
+```tsx
+import bcrypt from "bcrypt";
+import { NextResponse } from "next/server";
+import { db } from "../../../lib/prismadb";
+
+export async function POST(req: Request, res: Response) {
+  try {
+    const body = await req.json();
+    const { email, name, password } = body;
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const user = await db.user.create({
+      data: {
+        email,
+        name,
+        hashedPassword,
+      },
+    });
+    return NextResponse.json(user);
+  } catch (error) {
+    console.log(error);
+    return NextResponse.json(400);
+  }
+}
+```
+
+Você precisará do seguinte código para o bcrypt:
+
+```jsx
+npm i --save-dev @types/bcrypt
+```
+
+Dentro da pasta ‘lib’ crie o arquivo ‘auth.ts’:
+
+![Untitled](1%C2%B0%20NextAuth%209e4d25059dfe4296a7c060d8db955eb5/Untitled%202.png)
+
+Com o código:
+
+```tsx
+import type {
+  GetServerSidePropsContext,
+  NextApiRequest,
+  NextApiResponse,
+} from "next";
+import type { NextAuthOptions as NextAuthConfig } from "next-auth";
+import { getServerSession } from "next-auth";
+import bcrypt from "bcrypt";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
+import { db } from "./prismadb";
+import Github from "next-auth/providers/github";
+import Google from "next-auth/providers/google";
+
+// Read more at: https://next-auth.js.org/getting-started/typescript#module-augmentation
+declare module "next-auth/jwt" {
+  interface JWT {
+    /** The user's role. */
+    userRole?: "admin";
+  }
+}
+export const config = {
+  adapter: PrismaAdapter(db),
+  providers: [
+    Github({
+      clientId: process.env.AUTH_GITHUB_ID,
+      clientSecret: process.env.AUTH_GITHUB_SECRET,
+    }),
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET,
+    }),
+    CredentialsProvider({
+      name: "credentials",
+      credentials: {
+        email: { label: "Email", type: "text" },
+        password: { label: "Password", type: "password" },
+        username: { label: "Username", type: "text" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Invalid credentials");
+        }
+
+        const user = await db.user.findUnique({
+          where: {
+            email: credentials.email,
+          },
+        });
+
+        if (!user || !user?.hashedPassword) {
+          throw new Error("Invalid credentials");
+        }
+
+        const isCorrectPassword = await bcrypt.compare(
+          credentials.password,
+          user.hashedPassword
+        );
+
+        if (!isCorrectPassword) {
+          throw new Error("Invalid credentials");
+        }
+
+        return user;
+      },
+    }),
+  ],
+  session: {
+    strategy: "jwt",
+  },
+  jwt: {
+    secret: process.env.NEXTAUTH_JWT_SECRET,
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+  callbacks: {
+    async session({ token, session }) {
+      if (token) {
+        session.user.id = token.id;
+        session.user.name = token.name;
+        session.user.email = token.email;
+        session.user.image = token.picture;
+      }
+
+      return session;
+    },
+    async jwt({ token, user }) {
+      const dbUser = await db.user.findFirst({
+        where: {
+          email: token.email,
+        },
+      });
+
+      if (!dbUser) {
+        if (user) {
+          token.id = user?.id;
+        }
+        return token;
+      }
+
+      return {
+        id: dbUser.id,
+        name: dbUser.name,
+        email: dbUser.email,
+        picture: dbUser.image,
+      };
+    },
+  },
+} satisfies NextAuthConfig;
+
+// Helper function to get session without passing config every time
+// https://next-auth.js.org/configuration/nextjs#getserversession
+export function auth(
+  ...args:
+    | [GetServerSidePropsContext["req"], GetServerSidePropsContext["res"]]
+    | [NextApiRequest, NextApiResponse]
+    | []
+) {
+  return getServerSession(...args, config);
+}
+
+declare global {
+  namespace NodeJS {
+    export interface ProcessEnv {
+      NEXTAUTH_SECRET: string;
+      AUTH_GITHUB_ID: string;
+      AUTH_GITHUB_SECRET: string;
+      AUTH_GOOGLE_ID: string;
+      AUTH_GOOGLE_SECRET: string;
+    }
+  }
+}
+```
+
+Crie agora a rota ‘auth/[…nextauth]’:
+
+```tsx
+import NextAuth from "next-auth/next";
+import { config } from "@/lib/auth";
+
+const handler = NextAuth(config);
+export { handler as GET, handler as POST };
+```
+
+No arquivo ‘.env’, coloque as variáveis:
+
+```
+NEXTAUTH_JWT_SECRET="kasdnjawebuba"
+NEXTAUTH_SECRET="sadfmaewrifdsa"
+NEXTAUTH_URL=http://localhost:3000
+AUTH_GOOGLE_ID=981316151749-8c16a6bpssco3dp28osd045ba58irm38.apps.googleusercontent.com
+AUTH_GOOGLE_SECRET=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
+AUTH_GITHUB_ID=c4fa1c962115f1a7ab0d
+AUTH_GITHUB_SECRET=ebfb6a3cbd313c1d400af1f6c589653cee72b933
+```
+
+## Google Credentials:
+
+[https://console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials)
+
+![Untitled](1%C2%B0%20NextAuth%209e4d25059dfe4296a7c060d8db955eb5/Untitled%203.png)
+
+![Untitled](1%C2%B0%20NextAuth%209e4d25059dfe4296a7c060d8db955eb5/Untitled%204.png)
+
+## Github Credentials:
+
+[https://github.com/settings/developers](https://github.com/settings/developers)
+
+![Untitled](1%C2%B0%20NextAuth%209e4d25059dfe4296a7c060d8db955eb5/Untitled%205.png)
+
+Crie um Provider:
+
+![Untitled](1%C2%B0%20NextAuth%209e4d25059dfe4296a7c060d8db955eb5/Untitled%206.png)
+
+```tsx
+"use client"
+
+import { FC } from "react";
+import { ProvidersProps } from "./theme.provider";
+import { SessionProvider } from "next-auth/react";
+
+export const AuthProvider: FC<ProvidersProps> = ({ children }) => {
+  return <SessionProvider>{children}</SessionProvider>;
+};
+```
+
+E englobe todo o layout com ele:
+
+```tsx
+import "@/styles/globals.css";
+import { Metadata } from "next";
+import { siteConfig } from "@/config/site";
+import { fontSans } from "@/config/fonts";
+import { ThemeProvider } from "../components/providers/theme.provider";
+import { Navbar } from "@/components/navbar";
+import clsx from "clsx";
+import { AuthProvider } from "@/components/providers/auth.provider";
+
+export const metadata: Metadata = {
+  title: {
+    default: siteConfig.name,
+    template: `%s - ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "white" },
+    { media: "(prefers-color-scheme: dark)", color: "black" },
+  ],
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon-16x16.png",
+    apple: "/apple-touch-icon.png",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <head />
+      <AuthProvider>
+        <body
+          className={clsx(
+            "min-h-screen bg-background font-sans antialiased",
+            fontSans.variable
+          )}
+        >
+          <ThemeProvider
+            themeProps={{ attribute: "class", defaultTheme: "dark" }}
+          >
+            <div className="relative flex flex-col h-screen">
+              <Navbar />
+              <main className="container mx-auto max-w-7xl pt-16 px-6 flex-grow">
+                {children}
+              </main>
+            </div>
+          </ThemeProvider>
+        </body>
+      </AuthProvider>
+    </html>
+  );
+}
+```
+
+## Como pegar a Session Client/Side
+
+```tsx
+"use client";
+
+import { useSession } from "next-auth/react";
+
+const Saldo =  () => {
+  const { data: session, status } = useSession();
+
+```
